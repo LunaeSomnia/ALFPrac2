@@ -8,7 +8,7 @@ Esta es la práctica 2 de ALF (2º grado de UM)
 
 ## PROGRAMA:
 
-1. Solicitamos el nombre del fichero con el ADN de genes en FASTA descargado de la página [REBASE](http://rebase.neb.com/rebase/rebase.seqs.html) (comprobano que finaliza con la cadena `DNA.txt` (o precedido de un directorio)).
+1. Solicitamos el nombre del fichero con el ADN de genes en FASTA descargado de la página [REBASE](http://rebase.neb.com/rebase/rebase.seqs.html) (comprobando que finaliza con la cadena `DNA.txt` (o precedido de un directorio)).
 
 2. Generar un fichero en el mismo directorio con las cadenas de aminoacidos traduciendolo a proteinas (terminado en `Protein.txt`)
 
