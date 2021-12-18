@@ -65,12 +65,6 @@ def numero_de_linea(busqueda, string):
     for num, linea in enumerate(string.splitlines(), 1):
         if linea.__contains__(busqueda):
             return str(num)
-        
-
-def comprobar_nucleotidos(nucl, num):
-    if len(nucl) == num:
-        return True
-    return False
 
 # Comprobación de compilar todos los regex únicamente una vez
 def comprobar_regex(regex):
@@ -219,6 +213,12 @@ if __name__ == "__main__":
     with open(reemplazar_regex(camino_fichero, r"\1\2Protein.txt", r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$"), "w") as f:
         for nombre, (adn, prot) in tabla_de_proteinas.items():
             f.write(prot + "\n\n")
+
+
+
+
+
+
 
     # Parte 2
 
