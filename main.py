@@ -2,11 +2,13 @@ import regex as re
 import math
 import os
 
-## Comprueba si la proteina introducida (en regex) es válida siguiendo las normas
-## de la parte 1
+regex_compilados = {}
+
+## Comprueba si la proteina introducida (string) es válida siguiendo las normas de la parte 1
 
 def comprobar_proteina(proteina, archivo_string):
 
+    # Cambiamos de string a regex
     proteina = validar_entera_regex(proteina, r">(?P<nombre>.+?)     (?P<num>\d+) nt( fragment)?\n(((\w{10} ){4}(\w{10})\n)*(\w{10} )*\w+)")
 
     if not(proteina):
@@ -32,8 +34,8 @@ def comprobar_proteina(proteina, archivo_string):
         return False    
 
     # Comprobamos que el número de nucleótidos coincide con el número indicado
-    # Se podría hacer con regex el tema de len(string) = numero
-    elif not(comprobar_nucleotidos(nucleotidos_traducidos, int(proteina.group("num")))):
+    elif not(len(list(validar_iter_regex(nucleotidos_traducidos, r"."))) == int(proteina.group("num"))):
+    # elif not(comprobar_nucleotidos(nucleotidos_traducidos, int(proteina.group("num")))):
         print("ERROR 5: El número de nucleótidos de un gen no coincide con el indicado en la primera línea.")
         print("  Línea de la proteína: " + numero_de_linea(nombre, archivo_string))
         return False
@@ -58,7 +60,7 @@ def comprobar_proteina(proteina, archivo_string):
 
     return True
 
-# Busca una busqueda en una string y retorna la linea en la que se encuentra
+# Realiza una busqueda en una string y retorna la linea en la que se encuentra
 def numero_de_linea(busqueda, string):
     for num, linea in enumerate(string.splitlines(), 1):
         if linea.__contains__(busqueda):
@@ -70,22 +72,24 @@ def comprobar_nucleotidos(nucl, num):
         return True
     return False
 
+# Comprobación de compilar todos los regex únicamente una vez
+def comprobar_regex(regex):
+    if not(regex in regex_compilados.keys()):
+        regex_compilados[regex] = re.compile(regex)
+    return regex_compilados[regex]
+
 # Funciones de Regex
 def validar_regex(entrada, regex):
-    regex_compilado = re.compile(regex)
-    return regex_compilado.match(entrada)
+    return comprobar_regex(regex).match(entrada)
 
 def reemplazar_regex(entrada, sustitucion, regex):
-    regex_compilado = re.compile(regex)
-    return regex_compilado.sub(sustitucion, entrada)
+    return comprobar_regex(regex).sub(sustitucion, entrada)
 
 def validar_entera_regex(entrada, regex):
-    regex_compilado = re.compile(regex)
-    return regex_compilado.fullmatch(entrada)
+    return comprobar_regex(regex).fullmatch(entrada)
 
 def validar_iter_regex(entrada, regex):
-    regex_compilado = re.compile(regex)
-    return regex_compilado.finditer(entrada)
+    return comprobar_regex(regex).finditer(entrada)
 
 def traducir_nucleotidos(nucleotidos):
     if validar_entera_regex(nucleotidos, r"UU[UC]"):
@@ -136,6 +140,9 @@ def traducir_nucleotidos(nucleotidos):
     
 def traducir_a_proteina(proteina):
 
+    # Cambiamos de string a regex
+    proteina = validar_entera_regex(proteina, r">(?P<nombre>.+?)     (?P<num>\d+) nt( fragment)?\n(((\w{10} ){4}(\w{10})\n)*(\w{10} )*\w+)")
+
     if proteina.group(3):
         fragment = proteina.group(3)
     else:
@@ -175,62 +182,69 @@ def traducir_a_proteina(proteina):
 
 if __name__ == "__main__":
 
-    # Parte 1.2
 
-    debug = True
+    # Parte 1
 
-    if not(debug):
-        camino_fichero = input("Hola buenos dias. Te solicito el nombre del fichero: ")
+    camino_fichero = input("Hola buenos dias. Te solicito el nombre del fichero (ruta absoluta): ")
+    formato_archivo = validar_entera_regex(camino_fichero, r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$")
+    existe_archivo = os.path.exists(camino_fichero)
+    while not(
+        formato_archivo and                   # Que tenga el formato '/dir1/.../nombre.DNA.txt'
+        os.path.exists(camino_fichero)        # Que ese 'archivo' exista
+        ):
+
+        if not(formato_archivo):
+            print("ERROR 1: El fichero no finaliza con 'DNA.txt'.")
+
+        elif not(existe_archivo):
+            print("ERROR 2: El fichero no existe.")
+
+        camino_fichero = input("Inserta otro fichero y que sea válido: ")
         formato_archivo = validar_entera_regex(camino_fichero, r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$")
-        existe_archivo = os.path.exists(camino_fichero)
-        while not(
-            formato_archivo and                   # Que tenga el formato '/dir1/.../nombre.DNA.txt'
-            os.path.exists(camino_fichero)        # Que ese 'archivo' exista
-            ):
-
-            if not(formato_archivo):
-                print("ERROR 1: El fichero no finaliza con 'DNA.txt'.")
-
-            elif not(existe_archivo):
-                print("ERROR 2: El fichero no existe.")
-
-            camino_fichero = input("Hola buenos dias de nuevo. A ver como te lo explico... que este no vale socio.")
-            formato_archivo = validar_entera_regex(camino_fichero, r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$")
-    else:
-        camino_fichero = "/home/lunaesomnia/Documents/GitHub/ALFPrac2/All_C_genes_DNA.txt"
-        formato_archivo = validar_entera_regex(camino_fichero, r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$")
-        existe_archivo = os.path.exists(camino_fichero)
 
     archivo = open(camino_fichero, "r").read()
 
-
-    directorios = formato_archivo.group(1)     # directorios
-    nombre_archivo = formato_archivo.group(2)  # nombre del fichero (sin DNA.txt)
-    extension = formato_archivo.group(3)       # extension (DNA.txt)
-
-    cadenas = []
+    tabla_de_proteinas = {}
 
     # Por cada proteína que cumple el formato FASTA, hacemos los checks
     for prot in validar_iter_regex(archivo, r">(?P<nombre>.+?)     (?P<num>\d+) nt( fragment)?\n(((\w{10} ){4}(\w{10})\n)*(\w{10} )*\w+)"):
         if comprobar_proteina(prot[0], archivo):
-            cadenas.append(prot)
-
-    proteinas = []
-
-    # Por cada cadena de adn, generar su proteina
-    for cadena in cadenas:
-        nueva_proteina = traducir_a_proteina(cadena)
-        if nueva_proteina != "":
-            proteinas.append(nueva_proteina)
+            nombre = prot.group("nombre")
+            nuevo_adn = prot[0]
+            nueva_proteina = traducir_a_proteina(nuevo_adn)
+            if nueva_proteina != "": # Si no nos hemos encontrado con ningun nucleótido inválido, añadimos al diccionario
+                tabla_de_proteinas[nombre] = (nuevo_adn, nueva_proteina)
 
     # Generar un archivo en el directorio llamado ".... Protein.txt" y guardar los resultados
-    with open(directorios + nombre_archivo + "Protein.txt", "w") as f:
-        for proteina in proteinas:
-            f.write(proteina + "\n\n")
+    with open(reemplazar_regex(camino_fichero, r"\1\2Protein.txt", r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$"), "w") as f:
+        for nombre, (adn, prot) in tabla_de_proteinas.items():
+            f.write(prot + "\n\n")
 
-# Parte 2
+    # Parte 2
 
+    expreg = input("ER >> ")
 
-    
-    
-    
+    while expreg != "":
+        nombres_encontrados = []
+        nombres_totales = tabla_de_proteinas.keys()
+        for nombre in nombres_totales:
+            if validar_regex(nombre, expreg):
+                nombres_encontrados.append(nombre)
+
+        for nombre in nombres_encontrados:
+            (adn, proteina) = tabla_de_proteinas[nombre]
+            # Hacer el print de la solución
+            print("======================================================\n")
+            print("Nombre: " + nombre + "\n")
+            nuevo_adn = reemplazar_regex(adn, "ADN:", r"(.+?    )")
+            nuevo_adn = reemplazar_regex(nuevo_adn, "nt\1\n\n", r"nt( fragment)?\n")
+            print(nuevo_adn)
+            nueva_proteina = reemplazar_regex(proteina, "Proteina:", r"(.+?    )")
+            nueva_proteina = reemplazar_regex(nueva_proteina, "aa\1\n\n", r"aa( fragment)?\n")
+            print("\n" + nueva_proteina)
+
+        print("======================================================\n")
+        print(str(len(nombres_encontrados)) + " coincidencias" + "\n")
+        # Print de las coincidencias
+
+        expreg = input("ER >> ")
