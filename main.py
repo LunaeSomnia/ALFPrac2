@@ -214,12 +214,6 @@ if __name__ == "__main__":
         for nombre, (adn, prot) in tabla_de_proteinas.items():
             f.write(prot + "\n\n")
 
-
-
-
-
-
-
     # Parte 2
 
     expreg = input("ER >> ")
