@@ -2,6 +2,9 @@ import regex as re
 import math
 import os
 
+## Comprueba si la proteina introducida (en regex) es válida siguiendo las normas
+## de la parte 1
+
 def comprobar_proteina(proteina, archivo_string):
 
     proteina = validar_entera_regex(proteina, r">(?P<nombre>.+?)     (?P<num>\d+) nt( fragment)?\n(((\w{10} ){4}(\w{10})\n)*(\w{10} )*\w+)")
@@ -67,7 +70,7 @@ def comprobar_nucleotidos(nucl, num):
         return True
     return False
 
-
+# Funciones de Regex
 def validar_regex(entrada, regex):
     regex_compilado = re.compile(regex)
     return regex_compilado.match(entrada)
@@ -129,11 +132,9 @@ def traducir_nucleotidos(nucleotidos):
         return "E"
     elif validar_entera_regex(nucleotidos, r"GG."):
         return "G"
-    return ""
+    return "-"
     
 def traducir_a_proteina(proteina):
-
-    # proteina = validar_entera_regex(proteina, r">(?P<nombre>.+?)     (?P<num>\d+) nt( fragment)?\n(((\w{10} ){4}(\w{10})\n)*(\w{10} )*\w+)")
 
     if proteina.group(3):
         fragment = proteina.group(3)
@@ -149,9 +150,11 @@ def traducir_a_proteina(proteina):
     nucleotidos_nuevos = ""
 
     for grupo in validar_iter_regex(nucleotidos_traducidos, r".{3}"):
-        nucleotidos_nuevos += traducir_nucleotidos(grupo[0])
-
-    # MAVSYKKLFHLLIEKDMTNTQLQQEAGFSANIITRLKRNGYVSLESIESICRVMNCGVDGILEFVPEDGGENNDRY
+        nuevo = traducir_nucleotidos(grupo[0])
+        if nuevo == '-':            # Hay un caso en el que hay dos nucleótidos que no tienen traducción, en concreto "NNN" y "NN_".
+                                    #     Para este caso, hemos decidido no contar la proteína para no sacarla como resultado.
+            return ""
+        nucleotidos_nuevos += nuevo
 
     nucleotidos_nuevos_traducidos_1 = ""
 
@@ -172,11 +175,7 @@ def traducir_a_proteina(proteina):
 
 if __name__ == "__main__":
 
-    # Parte 2
-
-    # C.FcoF9R61ORF5215P
-
-    # Comprobación de un fichero válido
+    # Parte 1.2
 
     debug = True
 
@@ -185,8 +184,8 @@ if __name__ == "__main__":
         formato_archivo = validar_entera_regex(camino_fichero, r"(\.?(?:.+\/)*)(.+)(DNA\.txt)$")
         existe_archivo = os.path.exists(camino_fichero)
         while not(
-            formato_archivo and # Que tenga el formato '/dir1/.../nombre.DNA.txt'
-            os.path.exists(camino_fichero)                                                             # Que ese 'archivo' exista
+            formato_archivo and                   # Que tenga el formato '/dir1/.../nombre.DNA.txt'
+            os.path.exists(camino_fichero)        # Que ese 'archivo' exista
             ):
 
             if not(formato_archivo):
@@ -205,9 +204,9 @@ if __name__ == "__main__":
     archivo = open(camino_fichero, "r").read()
 
 
-    directorios = formato_archivo.group(1)  # directorios
+    directorios = formato_archivo.group(1)     # directorios
     nombre_archivo = formato_archivo.group(2)  # nombre del fichero (sin DNA.txt)
-    extension = formato_archivo.group(3)  # extension (DNA.txt)
+    extension = formato_archivo.group(3)       # extension (DNA.txt)
 
     cadenas = []
 
@@ -220,7 +219,9 @@ if __name__ == "__main__":
 
     # Por cada cadena de adn, generar su proteina
     for cadena in cadenas:
-        proteinas.append(traducir_a_proteina(cadena))
+        nueva_proteina = traducir_a_proteina(cadena)
+        if nueva_proteina != "":
+            proteinas.append(nueva_proteina)
 
     # Generar un archivo en el directorio llamado ".... Protein.txt" y guardar los resultados
     with open(directorios + nombre_archivo + "Protein.txt", "w") as f:
